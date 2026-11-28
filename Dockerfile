@@ -1,7 +1,5 @@
 FROM python:3.7-slim
 
-WORKDIR /app
-
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git \
  && rm -rf /var/lib/apt/lists/*
@@ -14,9 +12,15 @@ RUN git clone --depth 1 https://github.com/Netease-Games-AI-Lab-Guangzhou/Perfec
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
-COPY main.py /app/
+# main.py 放进仓库目录，与 uvicorn 的工作目录一致
+COPY main.py /app/PerfectDou/main.py
 
-ENV PYTHONPATH=/app/PerfectDou
+# 关键修正： WORKDIR 必须是 /app/PerfectDou。
+# encode.py 初始化时用相对路径读 card_type.json 等配置，
+# 原版 Dockerfile 的 WORKDIR=/app 会导致 FileNotFoundError: 'card_type.json'。
+WORKDIR /app/PerfectDou
+
+ENV PYTHONPATH=/app:/app/PerfectDou
 ENV PYTHONUNBUFFERED=1
 ENV PD_REPO=/app/PerfectDou
 
