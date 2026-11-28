@@ -139,6 +139,9 @@ def game(req: GameRequest):
     if req.seed is not None:
         random.seed(req.seed)
     deal = random_deal()
+    # 修正：card_play_init 直接引用 deal 里的列表，出牌会原地消耗它们。
+    # 先保存一份初始发牌快照，返回时用它，避免返回的 deal 变成残局。
+    initial_deal = {k: list(v) for k, v in deal.items()}
     players = {position: get_agent(position) for position in POSITIONS}
     env = GameEnv(players)
     env.card_play_init(deal)
@@ -153,7 +156,7 @@ def game(req: GameRequest):
         "utility": env.player_utility_dict,
         "bomb_num": env.bomb_num,
         "steps": steps,
-        "deal": {k: [EnvCard2RealCard[c] for c in v] for k, v in deal.items()},
+        "deal": {k: [EnvCard2RealCard[c] for c in v] for k, v in initial_deal.items()},
         "history": [[EnvCard2RealCard[c] for c in a] for a in env.card_play_action_seq],
     }
 
